@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, X, Save, RotateCcw } from 'lucide-react';
+import { Plus, X, Save, RotateCcw, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -34,7 +33,8 @@ import {
   LANGUES_DISPONIBLES 
 } from '@/types/candidate';
 
-const candidateSchema = z.object({
+// Schema pour nouveau candidat (tous les champs d'identité requis)
+const newCandidateSchema = z.object({
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
   prenom: z.string().min(2, 'Le prénom doit contenir au moins 2 caractères'),
   cin: z.string().min(6, 'Le CIN doit contenir au moins 6 caractères'),
@@ -63,7 +63,37 @@ const candidateSchema = z.object({
   observations: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof candidateSchema>;
+// Schema pour modification (champs d'identité optionnels car en lecture seule)
+const editCandidateSchema = z.object({
+  nom: z.string().optional(),
+  prenom: z.string().optional(),
+  cin: z.string().optional(),
+  dateNaissance: z.string().optional(),
+  lieuNaissance: z.string().optional(),
+  genre: z.enum(['Homme', 'Femme']).optional(),
+  adresse: z.string().optional(),
+  arrondissement: z.string().optional(),
+  telephone: z.string().optional(),
+  email: z.string().optional(),
+  typeCandidat: z.enum(['Jeune diplômé actif', 'Jeune diplômé en chômage', 'NEET']),
+  situationMatrimoniale: z.enum(['Célibataire', 'Marié(e)', 'Divorcé(e)', 'Veuf(ve)']),
+  occupationMere: z.string().min(1, 'L\'occupation de la mère est requise'),
+  occupationPere: z.string().min(1, 'L\'occupation du père est requise'),
+  niveauEtude: z.enum(['Sans', 'Primaire', 'Secondaire collégial', 'Secondaire qualifiant', 'Supérieur']),
+  typeDiplome: z.enum(['Sans', 'Niveau Bac', 'Bac', 'Bac+2', 'Bac+3', 'Bac+4', 'Bac+5', 'Supérieur à Bac+5', 'Brevet']),
+  filiereDiplome: z.string().min(1, 'La filière est requise'),
+  experienceGenerale: z.enum(["Pas d'expérience", "Moins d'un an", 'Entre 1 et 3 ans', 'Entre 3 et 5 ans', 'Plus de 5 ans']),
+  milieu: z.enum(['Urbain', 'Rural', 'Périurbain']),
+  sourceInscription: z.string().min(1, 'La source d\'inscription est requise'),
+  objectif: z.enum(['Entrepreneuriat', 'ESS', 'Formation', 'Employabilité']),
+  formationChoisie: z.string().min(1, 'La formation est requise'),
+  orientation: z.enum(['Interne', 'Externe']),
+  destination: z.string().min(1, 'La destination est requise'),
+  dateOrientation: z.string().optional(),
+  observations: z.string().optional(),
+});
+
+type FormValues = z.infer<typeof newCandidateSchema>;
 
 interface CandidateFormProps {
   initialData?: CandidateFormData;
@@ -71,9 +101,17 @@ interface CandidateFormProps {
   onCancel?: () => void;
 }
 
-const FormSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const FormSection = ({ title, children, locked = false }: { title: string; children: React.ReactNode; locked?: boolean }) => (
   <div className="space-y-4">
-    <h3 className="text-lg font-semibold text-primary border-b border-border pb-2">{title}</h3>
+    <h3 className="text-lg font-semibold text-primary border-b border-border pb-2 flex items-center gap-2">
+      {title}
+      {locked && (
+        <Badge variant="outline" className="text-xs bg-muted">
+          <Lock className="w-3 h-3 mr-1" />
+          Lecture seule
+        </Badge>
+      )}
+    </h3>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {children}
     </div>
@@ -84,9 +122,11 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
   const [langues, setLangues] = useState<Language[]>(initialData?.langues || []);
   const [newLangue, setNewLangue] = useState('');
   const [newLevel, setNewLevel] = useState<Language['level']>('Intermédiaire');
+  
+  const isEditing = !!initialData;
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(candidateSchema),
+    resolver: zodResolver(isEditing ? editCandidateSchema : newCandidateSchema),
     defaultValues: {
       nom: initialData?.nom || '',
       prenom: initialData?.prenom || '',
@@ -130,16 +170,16 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
 
   const handleSubmit = (values: FormValues) => {
     const formData: CandidateFormData = {
-      nom: values.nom,
-      prenom: values.prenom,
-      cin: values.cin,
-      dateNaissance: values.dateNaissance,
-      lieuNaissance: values.lieuNaissance,
-      genre: values.genre,
-      adresse: values.adresse,
-      arrondissement: values.arrondissement,
-      telephone: values.telephone,
-      email: values.email,
+      nom: isEditing ? initialData!.nom : values.nom,
+      prenom: isEditing ? initialData!.prenom : values.prenom,
+      cin: isEditing ? initialData!.cin : values.cin,
+      dateNaissance: isEditing ? initialData!.dateNaissance : values.dateNaissance,
+      lieuNaissance: isEditing ? initialData!.lieuNaissance : values.lieuNaissance,
+      genre: isEditing ? initialData!.genre : values.genre,
+      adresse: isEditing ? initialData!.adresse : values.adresse,
+      arrondissement: isEditing ? initialData!.arrondissement : values.arrondissement,
+      telephone: isEditing ? initialData!.telephone : values.telephone,
+      email: isEditing ? initialData!.email : values.email,
       typeCandidat: values.typeCandidat,
       situationMatrimoniale: values.situationMatrimoniale,
       occupationMere: values.occupationMere,
@@ -164,8 +204,8 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8 animate-fade-in">
-        {/* Identité */}
-        <FormSection title="Identité">
+        {/* Identité - Lecture seule en mode édition */}
+        <FormSection title="Identité" locked={isEditing}>
           <FormField
             control={form.control}
             name="nom"
@@ -173,7 +213,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
               <FormItem>
                 <FormLabel>Nom *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nom de famille" {...field} />
+                  <Input placeholder="Nom de famille" {...field} disabled={isEditing} className={isEditing ? 'bg-muted' : ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -186,7 +226,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
               <FormItem>
                 <FormLabel>Prénom *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Prénom" {...field} />
+                  <Input placeholder="Prénom" {...field} disabled={isEditing} className={isEditing ? 'bg-muted' : ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -199,7 +239,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
               <FormItem>
                 <FormLabel>CIN *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Ex: AB123456" {...field} />
+                  <Input placeholder="Ex: AB123456" {...field} disabled={isEditing} className={isEditing ? 'bg-muted' : ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -212,7 +252,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
               <FormItem>
                 <FormLabel>Date de naissance *</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input type="date" {...field} disabled={isEditing} className={isEditing ? 'bg-muted' : ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -225,7 +265,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
               <FormItem>
                 <FormLabel>Lieu de naissance *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Ville de naissance" {...field} />
+                  <Input placeholder="Ville de naissance" {...field} disabled={isEditing} className={isEditing ? 'bg-muted' : ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -237,9 +277,9 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Genre *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditing}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className={isEditing ? 'bg-muted' : ''}>
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                   </FormControl>
@@ -254,8 +294,8 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
           />
         </FormSection>
 
-        {/* Coordonnées */}
-        <FormSection title="Coordonnées">
+        {/* Coordonnées - Lecture seule en mode édition */}
+        <FormSection title="Coordonnées" locked={isEditing}>
           <FormField
             control={form.control}
             name="adresse"
@@ -263,7 +303,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
               <FormItem className="col-span-full lg:col-span-2">
                 <FormLabel>Adresse *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Adresse complète" {...field} />
+                  <Input placeholder="Adresse complète" {...field} disabled={isEditing} className={isEditing ? 'bg-muted' : ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -275,9 +315,9 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Arrondissement *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditing}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className={isEditing ? 'bg-muted' : ''}>
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                   </FormControl>
@@ -298,7 +338,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
               <FormItem>
                 <FormLabel>Téléphone *</FormLabel>
                 <FormControl>
-                  <Input placeholder="0612345678" {...field} />
+                  <Input placeholder="0612345678" {...field} disabled={isEditing} className={isEditing ? 'bg-muted' : ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -311,15 +351,37 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
               <FormItem className="col-span-full lg:col-span-1">
                 <FormLabel>Email *</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="email@exemple.com" {...field} />
+                  <Input type="email" placeholder="email@exemple.com" {...field} disabled={isEditing} className={isEditing ? 'bg-muted' : ''} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="sourceInscription"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Source d'inscription *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditing}>
+                  <FormControl>
+                    <SelectTrigger className={isEditing ? 'bg-muted' : ''}>
+                      <SelectValue placeholder="Sélectionner" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {SOURCES_INSCRIPTION.map(source => (
+                      <SelectItem key={source} value={source}>{source}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
         </FormSection>
 
-        {/* Situation */}
+        {/* Situation - Modifiable */}
         <FormSection title="Situation">
           <FormField
             control={form.control}
@@ -416,7 +478,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
           />
         </FormSection>
 
-        {/* Formation & Expérience */}
+        {/* Formation & Expérience - Modifiable */}
         <FormSection title="Formation & Expérience">
           <FormField
             control={form.control}
@@ -518,40 +580,39 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
           />
         </FormSection>
 
-        {/* Langues */}
+        {/* Langues - Modifiable */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-primary border-b border-border pb-2">Langues</h3>
-          <div className="flex flex-wrap gap-2 min-h-[40px]">
+          <div className="flex flex-wrap gap-2 mb-4">
             {langues.map((langue) => (
-              <Badge key={langue.name} variant="secondary" className="py-2 px-3 text-sm">
-                {langue.name} ({langue.level})
-                <button
-                  type="button"
-                  onClick={() => removeLangue(langue.name)}
-                  className="ml-2 hover:text-destructive"
-                >
+              <Badge key={langue.name} variant="secondary" className="flex items-center gap-2 py-1.5 px-3">
+                {langue.name} - {langue.level}
+                <button type="button" onClick={() => removeLangue(langue.name)} className="hover:text-destructive">
                   <X className="w-3 h-3" />
                 </button>
               </Badge>
             ))}
+            {langues.length === 0 && (
+              <p className="text-sm text-muted-foreground">Aucune langue ajoutée</p>
+            )}
           </div>
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <Label>Langue</Label>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-sm font-medium">Langue</label>
               <Select value={newLangue} onValueChange={setNewLangue}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une langue" />
+                  <SelectValue placeholder="Choisir" />
                 </SelectTrigger>
                 <SelectContent>
-                  {LANGUES_DISPONIBLES.filter(l => !langues.find(lg => lg.name === l)).map(langue => (
+                  {LANGUES_DISPONIBLES.filter(l => !langues.find(lang => lang.name === l)).map(langue => (
                     <SelectItem key={langue} value={langue}>{langue}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1">
-              <Label>Niveau</Label>
-              <Select value={newLevel} onValueChange={(v: Language['level']) => setNewLevel(v)}>
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-sm font-medium">Niveau</label>
+              <Select value={newLevel} onValueChange={(v) => setNewLevel(v as Language['level'])}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -565,35 +626,14 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
               </Select>
             </div>
             <Button type="button" variant="outline" onClick={addLangue} disabled={!newLangue}>
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 mr-2" />
+              Ajouter
             </Button>
           </div>
         </div>
 
-        {/* Orientation */}
-        <FormSection title="Orientation">
-          <FormField
-            control={form.control}
-            name="sourceInscription"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Source d'inscription *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {SOURCES_INSCRIPTION.map(source => (
-                      <SelectItem key={source} value={source}>{source}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {/* Orientation - Modifiable */}
+        <FormSection title="Orientation & Objectifs">
           <FormField
             control={form.control}
             name="objectif"
@@ -644,7 +684,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
             name="orientation"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Type d'orientation *</FormLabel>
+                <FormLabel>Orientation *</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
@@ -697,7 +737,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
           />
         </FormSection>
 
-        {/* Observations */}
+        {/* Observations - Modifiable */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-primary border-b border-border pb-2">Observations</h3>
           <FormField
@@ -707,9 +747,9 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
               <FormItem>
                 <FormControl>
                   <Textarea 
-                    placeholder="Remarques, notes ou informations complémentaires..."
-                    className="min-h-[120px] resize-none"
-                    {...field} 
+                    placeholder="Notes et observations sur le candidat..."
+                    className="min-h-[100px]"
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage />
@@ -719,16 +759,16 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-4 pt-6 border-t">
+        <div className="flex justify-end gap-3 pt-6 border-t border-border">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>
               <RotateCcw className="w-4 h-4 mr-2" />
               Annuler
             </Button>
           )}
-          <Button type="submit" variant="gradient" size="lg">
+          <Button type="submit" className="gradient-primary">
             <Save className="w-4 h-4 mr-2" />
-            Enregistrer le candidat
+            {isEditing ? 'Enregistrer les modifications' : 'Créer le candidat'}
           </Button>
         </div>
       </form>
