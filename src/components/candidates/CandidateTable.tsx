@@ -18,8 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { format, differenceInYears, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface CandidateTableProps {
   candidates: Candidate[];
@@ -29,17 +29,20 @@ interface CandidateTableProps {
   onExport: (candidates: Candidate[], format: string) => void;
 }
 
-const typeBadgeStyles: Record<string, string> = {
-  'Jeune diplômé actif': 'bg-success/10 text-success border-success/20',
-  'Jeune diplômé en chômage': 'bg-warning/10 text-warning border-warning/20',
-  'NEET': 'bg-destructive/10 text-destructive border-destructive/20',
+const calculateAge = (dateNaissance: string): number => {
+  try {
+    return differenceInYears(new Date(), parseISO(dateNaissance));
+  } catch {
+    return 0;
+  }
 };
 
-const objectifBadgeStyles: Record<string, string> = {
-  'Entrepreneuriat': 'bg-primary/10 text-primary border-primary/20',
-  'ESS': 'bg-info/10 text-info border-info/20',
-  'Formation': 'bg-success/10 text-success border-success/20',
-  'Employabilité': 'bg-warning/10 text-warning border-warning/20',
+const formatDate = (dateString: string): string => {
+  try {
+    return format(parseISO(dateString), 'dd/MM/yyyy', { locale: fr });
+  } catch {
+    return dateString;
+  }
 };
 
 export function CandidateTable({ 
@@ -50,21 +53,24 @@ export function CandidateTable({
   onExport 
 }: CandidateTableProps) {
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [objectifFilter, setObjectifFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [genreFilter, setGenreFilter] = useState<string>('all');
 
   const filteredCandidates = candidates.filter(candidate => {
     const matchesSearch = 
       candidate.nom.toLowerCase().includes(search.toLowerCase()) ||
       candidate.prenom.toLowerCase().includes(search.toLowerCase()) ||
       candidate.cin.toLowerCase().includes(search.toLowerCase()) ||
-      candidate.email.toLowerCase().includes(search.toLowerCase());
+      candidate.email.toLowerCase().includes(search.toLowerCase()) ||
+      candidate.telephone.includes(search);
     
-    const matchesType = typeFilter === 'all' || candidate.typeCandidat === typeFilter;
-    const matchesObjectif = objectifFilter === 'all' || candidate.objectif === objectifFilter;
+    const matchesSource = sourceFilter === 'all' || candidate.sourceInscription === sourceFilter;
+    const matchesGenre = genreFilter === 'all' || candidate.genre === genreFilter;
     
-    return matchesSearch && matchesType && matchesObjectif;
+    return matchesSearch && matchesSource && matchesGenre;
   });
+
+  const uniqueSources = [...new Set(candidates.map(c => c.sourceInscription))];
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -74,36 +80,34 @@ export function CandidateTable({
           <div className="relative flex-1 min-w-[200px] max-w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher un candidat..."
+              placeholder="Rechercher (CIN, Nom, Tél, Email)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10"
             />
           </div>
           
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[200px]">
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="w-[180px]">
               <Filter className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Type de candidat" />
+              <SelectValue placeholder="Source" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les types</SelectItem>
-              <SelectItem value="Jeune diplômé actif">Jeune diplômé actif</SelectItem>
-              <SelectItem value="Jeune diplômé en chômage">Jeune diplômé en chômage</SelectItem>
-              <SelectItem value="NEET">NEET</SelectItem>
+              <SelectItem value="all">Toutes sources</SelectItem>
+              {uniqueSources.map(source => (
+                <SelectItem key={source} value={source}>{source}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           
-          <Select value={objectifFilter} onValueChange={setObjectifFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Objectif" />
+          <Select value={genreFilter} onValueChange={setGenreFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Genre" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les objectifs</SelectItem>
-              <SelectItem value="Entrepreneuriat">Entrepreneuriat</SelectItem>
-              <SelectItem value="ESS">ESS</SelectItem>
-              <SelectItem value="Formation">Formation</SelectItem>
-              <SelectItem value="Employabilité">Employabilité</SelectItem>
+              <SelectItem value="all">Tous</SelectItem>
+              <SelectItem value="Homme">Homme</SelectItem>
+              <SelectItem value="Femme">Femme</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -126,79 +130,90 @@ export function CandidateTable({
 
       {/* Table */}
       <div className="bg-card rounded-xl border shadow-card overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="font-semibold">Candidat</TableHead>
-              <TableHead className="font-semibold">CIN</TableHead>
-              <TableHead className="font-semibold">Type</TableHead>
-              <TableHead className="font-semibold">Objectif</TableHead>
-              <TableHead className="font-semibold">Formation</TableHead>
-              <TableHead className="font-semibold">Contact</TableHead>
-              <TableHead className="font-semibold text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCandidates.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                  Aucun candidat trouvé
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="font-semibold">Date</TableHead>
+                <TableHead className="font-semibold">CIN</TableHead>
+                <TableHead className="font-semibold">Nom & Prénom</TableHead>
+                <TableHead className="font-semibold">Date Naissance</TableHead>
+                <TableHead className="font-semibold">Age</TableHead>
+                <TableHead className="font-semibold">Adresse</TableHead>
+                <TableHead className="font-semibold">Arrondissement</TableHead>
+                <TableHead className="font-semibold">Tél</TableHead>
+                <TableHead className="font-semibold">Mail</TableHead>
+                <TableHead className="font-semibold">Source</TableHead>
+                <TableHead className="font-semibold">Genre</TableHead>
+                <TableHead className="font-semibold text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              filteredCandidates.map((candidate) => (
-                <TableRow 
-                  key={candidate.id} 
-                  className="hover:bg-muted/30 transition-colors cursor-pointer"
-                  onClick={() => onView(candidate)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                        {candidate.prenom[0]}{candidate.nom[0]}
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{candidate.prenom} {candidate.nom}</p>
-                        <p className="text-xs text-muted-foreground">{candidate.arrondissement}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{candidate.cin}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={cn("text-xs", typeBadgeStyles[candidate.typeCandidat])}>
-                      {candidate.typeCandidat}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={cn("text-xs", objectifBadgeStyles[candidate.objectif])}>
-                      {candidate.objectif}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{candidate.formationChoisie}</TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <p>{candidate.telephone}</p>
-                      <p className="text-muted-foreground text-xs">{candidate.email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" onClick={() => onView(candidate)}>
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => onEdit(candidate)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => onDelete(candidate.id)} className="text-destructive hover:text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {filteredCandidates.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
+                    Aucun candidat trouvé
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                filteredCandidates.map((candidate) => (
+                  <TableRow 
+                    key={candidate.id} 
+                    className="hover:bg-muted/30 transition-colors cursor-pointer"
+                    onClick={() => onView(candidate)}
+                  >
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {formatDate(candidate.dateCreation)}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm whitespace-nowrap">
+                      {candidate.cin}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <span className="font-medium">{candidate.nom} {candidate.prenom}</span>
+                    </TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {formatDate(candidate.dateNaissance)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {calculateAge(candidate.dateNaissance)} ans
+                    </TableCell>
+                    <TableCell className="text-sm max-w-[150px] truncate" title={candidate.adresse}>
+                      {candidate.adresse}
+                    </TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {candidate.arrondissement}
+                    </TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {candidate.telephone}
+                    </TableCell>
+                    <TableCell className="text-sm max-w-[150px] truncate" title={candidate.email}>
+                      {candidate.email}
+                    </TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {candidate.sourceInscription}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {candidate.genre}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" onClick={() => onView(candidate)}>
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => onEdit(candidate)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => onDelete(candidate.id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Results count */}
