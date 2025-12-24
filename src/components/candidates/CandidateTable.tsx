@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Edit, Trash2, Download, Search, Filter } from 'lucide-react';
+import { Eye, Edit, Trash2, Download, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Candidate } from '@/types/candidate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,8 @@ interface CandidateTableProps {
   onExport: (candidates: Candidate[], format: string) => void;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 const calculateAge = (dateNaissance: string): number => {
   try {
     return differenceInYears(new Date(), parseISO(dateNaissance));
@@ -55,6 +57,7 @@ export function CandidateTable({
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [genreFilter, setGenreFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredCandidates = candidates.filter(candidate => {
     const matchesSearch = 
@@ -70,6 +73,27 @@ export function CandidateTable({
     return matchesSearch && matchesSource && matchesGenre;
   });
 
+  // Pagination
+  const totalPages = Math.ceil(filteredCandidates.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedCandidates = filteredCandidates.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleSourceFilterChange = (value: string) => {
+    setSourceFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleGenreFilterChange = (value: string) => {
+    setGenreFilter(value);
+    setCurrentPage(1);
+  };
+
   const uniqueSources = [...new Set(candidates.map(c => c.sourceInscription))];
 
   return (
@@ -82,12 +106,12 @@ export function CandidateTable({
             <Input
               placeholder="Rechercher (CIN, Nom, Tél, Email)..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10"
             />
           </div>
           
-          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <Select value={sourceFilter} onValueChange={handleSourceFilterChange}>
             <SelectTrigger className="w-[180px]">
               <Filter className="w-4 h-4 mr-2" />
               <SelectValue placeholder="Source" />
@@ -100,7 +124,7 @@ export function CandidateTable({
             </SelectContent>
           </Select>
           
-          <Select value={genreFilter} onValueChange={setGenreFilter}>
+          <Select value={genreFilter} onValueChange={handleGenreFilterChange}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Genre" />
             </SelectTrigger>
@@ -149,14 +173,14 @@ export function CandidateTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCandidates.length === 0 ? (
+              {paginatedCandidates.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
                     Aucun candidat trouvé
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredCandidates.map((candidate) => (
+                paginatedCandidates.map((candidate) => (
                   <TableRow 
                     key={candidate.id} 
                     className="hover:bg-muted/30 transition-colors cursor-pointer"
@@ -216,10 +240,50 @@ export function CandidateTable({
         </div>
       </div>
 
-      {/* Results count */}
-      <p className="text-sm text-muted-foreground">
-        {filteredCandidates.length} candidat(s) trouvé(s) sur {candidates.length}
-      </p>
+      {/* Pagination */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Affichage {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredCandidates.length)} sur {filteredCandidates.length} candidat(s)
+        </p>
+        
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Précédent
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <Button
+                  key={page}
+                  variant={page === currentPage ? "default" : "outline"}
+                  size="sm"
+                  className="w-8 h-8 p-0"
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Button>
+              ))}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Suivant
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
