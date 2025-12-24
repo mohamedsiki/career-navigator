@@ -3,6 +3,11 @@ export interface Language {
   level: 'Débutant' | 'Intermédiaire' | 'Avancé' | 'Courant' | 'Natif';
 }
 
+export interface CustomField {
+  label: string;
+  value: string;
+}
+
 export interface Candidate {
   id: string;
   // Identité
@@ -45,6 +50,9 @@ export interface Candidate {
   destination: string;
   dateOrientation: string;
   observations: string;
+  
+  // Champs personnalisés
+  customFields?: CustomField[];
   
   // Métadonnées
   dateCreation: string;
