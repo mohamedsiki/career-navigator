@@ -110,70 +110,138 @@ export const exportToPDF = (candidates: Candidate[], filename: string = 'candida
   // Create a printable HTML document
   const printContent = `
     <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Liste des Candidats</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; padding: 20px; font-size: 10px; }
-        h1 { text-align: center; color: #2563EB; margin-bottom: 20px; font-size: 18px; }
-        .candidate { page-break-inside: avoid; border: 1px solid #ddd; margin-bottom: 15px; padding: 15px; border-radius: 8px; }
-        .candidate-header { background: #2563EB; color: white; padding: 10px; margin: -15px -15px 15px -15px; border-radius: 8px 8px 0 0; }
-        .section { margin-bottom: 10px; }
-        .section-title { font-weight: bold; color: #2563EB; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 3px; }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .field { }
-        .label { font-weight: bold; color: #666; }
-        .value { color: #333; }
-        .observations { background: #f9f9f9; padding: 8px; border-radius: 4px; margin-top: 5px; }
-        @media print { .candidate { page-break-inside: avoid; } }
+      <html lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>Fiche de Renseignements</title>
+        <style>
+          @page { size: A4; margin: 1cm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; padding: 20px; color: #000; }
+          
+          /* En-tête avec logos */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .logo-box { width: 100px; height: 80px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+        .header-center { text-align: center; font-weight: bold; font-size: 14px; }
+        
+        .date-section { text-align: left; margin-bottom: 20px; font-weight: bold; }
+        
+        .title { text-align: center; text-decoration: underline; font-size: 18px; margin-bottom: 30px; color: #1e40af; }
+        
+        /* Structure des champs */
+        .row { display: flex; align-items: flex-end; margin-bottom: 18px; width: 100%; }
+        .label { font-weight: bold; white-space: nowrap; margin-left: 10px; min-width: 150px; }
+        .dots { border-bottom: 1px dotted #444; flex-grow: 1; min-height: 20px; padding-right: 10px; font-style: italic; }
+        
+        /* Options (Cases à cocher / Choix) */
+        .options-row { display: flex; gap: 30px; margin: 20px 0; }
+        .option { display: flex; align-items: center; gap: 10px; }
+        .checkbox { width: 15px; height: 15px; border: 1px solid #000; display: inline-block; }
+        
+        .driver-license-grid { display: flex; gap: 15px; margin-top: 10px; font-weight: bold; }
+        
+        @media print {
+            .candidate { page-break-after: always; }
+        }
       </style>
     </head>
     <body>
-      <h1>Liste des Candidats - Plateforme de Gestion</h1>
-      <p style="text-align:center;margin-bottom:20px;color:#666;">Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
       ${candidates.map(c => `
         <div class="candidate">
-          <div class="candidate-header">
-            <strong>${c.nom} ${c.prenom}</strong> - ${c.id}
+          <div class="header">
+            <div class="logo-box">LOGO GAUCHE</div>
+            <div class="header-center">
+                المملكة المغربية<br>
+                المبادرة الوطنية للتنمية البشرية<br>
+                عمالة مقاطعات سيدي البرنوصي
+            </div>
+            <div class="logo-box">LOGO DROIT</div>
           </div>
-          
-          <div class="section">
-            <div class="section-title">Identité</div>
-            <div class="grid">
-              <div class="field"><span class="label">CIN:</span> <span class="value">${c.cin}</span></div>
-              <div class="field"><span class="label">Né(e) le:</span> <span class="value">${new Date(c.dateNaissance).toLocaleDateString('fr-FR')}</span></div>
-              <div class="field"><span class="label">Lieu:</span> <span class="value">${c.lieuNaissance}</span></div>
-              <div class="field"><span class="label">Genre:</span> <span class="value">${c.genre}</span></div>
-              <div class="field"><span class="label">Téléphone:</span> <span class="value">${c.telephone}</span></div>
-              <div class="field"><span class="label">Email:</span> <span class="value">${c.email}</span></div>
+
+          <div class="date-section">تاريخ: ..................... / 2025</div>
+
+          <div class="title">معلومات شخصية</div>
+
+          <div class="row">
+            <span class="label">الإسم الشخصي :</span>
+            <div class="dots">${c.prenom}</div>
+          </div>
+
+          <div class="row">
+            <span class="label">الإسم العائلي :</span>
+            <div class="dots">${c.nom}</div>
+          </div>
+
+          <div class="row">
+            <span class="label">رقم البطاقة الوطنية :</span>
+            <div class="dots">${c.cin}</div>
+          </div>
+
+          <div class="row">
+            <span class="label">تاريخ الإزدياد :</span>
+            <div class="dots">${new Date(c.dateNaissance).toLocaleDateString('fr-FR')}</div>
+          </div>
+
+          <div class="row">
+            <span class="label">مكان الإزدياد :</span>
+            <div class="dots">${c.lieuNaissance || ''}</div>
+          </div>
+
+          <div class="options-row">
+            <span class="label">الجنس :</span>
+<div class="option">ذكر <div class="checkbox">${c.genre === 'Homme' ? '✓' : ''}</div></div>
+<div class="option">أنثى <div class="checkbox">${c.genre === 'Femme' ? '✓' : ''}</div></div>
+          </div>
+
+          <div class="options-row">
+            <span class="label">الحالة العائلية :</span>
+            <div class="option">عازب(ة) <div class="checkbox"></div></div>
+            <div class="option">متزوج(ة) <div class="checkbox"></div></div>
+            <div class="option">مطلق(ة) <div class="checkbox"></div></div>
+            <div class="option">أرمل(ة) <div class="checkbox"></div></div>
+          </div>
+
+          <div class="row">
+            <span class="label">العنوان :</span>
+            <div class="dots">${c.adresse || ''}</div>
+          </div>
+
+          <div class="row">
+            <span class="label">رقم الهاتف :</span>
+            <div class="dots">${c.telephone}</div>
+          </div>
+
+          <div class="row">
+            <span class="label">رقم الهاتف (Whatsapp) :</span>
+            <div class="dots">${c.telephone}</div>
+          </div>
+
+          <div class="row">
+            <span class="label">البريد الإلكتروني :</span>
+            <div class="dots">${c.email}</div>
+          </div>
+
+          <div class="row">
+            <span class="label">هل تتوفر على رخصة السياقة :</span>
+            <div class="option">نعم <div class="checkbox"></div></div>
+            <div class="option">لا <div class="checkbox"></div></div>
+          </div>
+
+          <div class="driver-license-grid">
+            <span>أي فئة ؟ :</span>
+            <span>A</span> <span>A1</span> <span>B</span> <span>C</span> <span>D</span> <span>EB</span> <span>EC</span> <span>ED</span>
+          </div>
+
+          <div style="margin-top: 30px;">
+            <div class="row">
+              <span class="label">مهنة الأب :</span>
+              <div class="dots"></div>
+            </div>
+            <div class="row">
+              <span class="label">مهنة الأم :</span>
+              <div class="dots"></div>
             </div>
           </div>
-          
-          <div class="section">
-            <div class="section-title">Formation & Expérience</div>
-            <div class="grid">
-              <div class="field"><span class="label">Niveau:</span> <span class="value">${c.niveauEtude}</span></div>
-              <div class="field"><span class="label">Diplôme:</span> <span class="value">${c.typeDiplome}</span></div>
-              <div class="field"><span class="label">Filière:</span> <span class="value">${c.filiereDiplome}</span></div>
-              <div class="field"><span class="label">Expérience:</span> <span class="value">${c.experienceGenerale}</span></div>
-              <div class="field"><span class="label">Langues:</span> <span class="value">${c.langues.map(l => l.name).join(', ')}</span></div>
-            </div>
-          </div>
-          
-          <div class="section">
-            <div class="section-title">Orientation</div>
-            <div class="grid">
-              <div class="field"><span class="label">Type:</span> <span class="value">${c.typeCandidat}</span></div>
-              <div class="field"><span class="label">Objectif:</span> <span class="value">${c.objectif}</span></div>
-              <div class="field"><span class="label">Formation:</span> <span class="value">${c.formationChoisie}</span></div>
-              <div class="field"><span class="label">Orientation:</span> <span class="value">${c.orientation}</span></div>
-              <div class="field"><span class="label">Destination:</span> <span class="value">${c.destination}</span></div>
-            </div>
-          </div>
-          
-          ${c.observations ? `<div class="observations"><span class="label">Observations:</span> ${c.observations}</div>` : ''}
         </div>
       `).join('')}
     </body>

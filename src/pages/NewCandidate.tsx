@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { Header } from '@/components/layout/Header';
 import { CandidateForm } from '@/components/candidates/CandidateForm';
 import { CandidateFormData } from '@/types/candidate';
 import { addCandidate } from '@/lib/database';
@@ -22,11 +21,7 @@ export default function NewCandidate() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        title="Nouveau candidat" 
-        subtitle="Remplissez le formulaire d'inscription"
-      />
-      
+     
       <div className="p-8">
         <div className="max-w-5xl mx-auto bg-card rounded-xl border shadow-card p-8">
           <CandidateForm 

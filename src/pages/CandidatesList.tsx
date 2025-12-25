@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Header } from '@/components/layout/Header';
 import { CandidateTable } from '@/components/candidates/CandidateTable';
 import { CandidateDetailModal } from '@/components/candidates/CandidateDetailModal';
 import { Candidate } from '@/types/candidate';
@@ -88,10 +87,7 @@ export default function CandidatesList() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        title="Liste des candidats" 
-        subtitle={`${candidates.length} candidat(s) enregistré(s)`}
-      />
+      
       
       <div className="p-8">
         <CandidateTable

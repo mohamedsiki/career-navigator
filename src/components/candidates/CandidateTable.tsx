@@ -29,7 +29,8 @@ interface CandidateTableProps {
   onExport: (candidates: Candidate[], format: string) => void;
 }
 
-const ITEMS_PER_PAGE = 10;
+// <-- Modifié ici : afficher 5 candidats par page
+const ITEMS_PER_PAGE = 5;
 
 const calculateAge = (dateNaissance: string): number => {
   try {

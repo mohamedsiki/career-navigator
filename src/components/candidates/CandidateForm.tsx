@@ -24,8 +24,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { 
   CandidateFormData, 
-  Language,
-  CustomField,
+  Language, 
   ARRONDISSEMENTS, 
   SOURCES_INSCRIPTION, 
   FORMATIONS, 
@@ -123,9 +122,6 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
   const [langues, setLangues] = useState<Language[]>(initialData?.langues || []);
   const [newLangue, setNewLangue] = useState('');
   const [newLevel, setNewLevel] = useState<Language['level']>('Intermédiaire');
-  const [customFields, setCustomFields] = useState<CustomField[]>(initialData?.customFields || []);
-  const [newFieldLabel, setNewFieldLabel] = useState('');
-  const [newFieldValue, setNewFieldValue] = useState('');
   
   const isEditing = !!initialData;
 
@@ -172,24 +168,6 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
     setLangues(langues.filter(l => l.name !== name));
   };
 
-  const addCustomField = () => {
-    if (newFieldLabel.trim() && newFieldValue.trim()) {
-      setCustomFields([...customFields, { label: newFieldLabel.trim(), value: newFieldValue.trim() }]);
-      setNewFieldLabel('');
-      setNewFieldValue('');
-    }
-  };
-
-  const removeCustomField = (index: number) => {
-    setCustomFields(customFields.filter((_, i) => i !== index));
-  };
-
-  const updateCustomField = (index: number, field: 'label' | 'value', newValue: string) => {
-    const updated = [...customFields];
-    updated[index][field] = newValue;
-    setCustomFields(updated);
-  };
-
   const handleSubmit = (values: FormValues) => {
     const formData: CandidateFormData = {
       nom: isEditing ? initialData!.nom : values.nom,
@@ -219,7 +197,6 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
       destination: values.destination,
       dateOrientation: values.dateOrientation || '',
       observations: values.observations || '',
-      customFields: customFields.length > 0 ? customFields : undefined,
     };
     onSubmit(formData);
   };
@@ -781,77 +758,7 @@ export function CandidateForm({ initialData, onSubmit, onCancel }: CandidateForm
           />
         </div>
 
-        {/* Champs personnalisés */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-primary border-b border-border pb-2">
-            Champs personnalisés
-          </h3>
-          
-          {/* Liste des champs existants */}
-          {customFields.length > 0 && (
-            <div className="space-y-3">
-              {customFields.map((field, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                  <Input
-                    placeholder="Nom du champ"
-                    value={field.label}
-                    onChange={(e) => updateCustomField(index, 'label', e.target.value)}
-                    className="flex-1"
-                  />
-                  <Input
-                    placeholder="Valeur"
-                    value={field.value}
-                    onChange={(e) => updateCustomField(index, 'value', e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeCustomField(index)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Ajouter un nouveau champ */}
-          <div className="flex items-end gap-3 p-4 border border-dashed border-border rounded-lg bg-muted/30">
-            <div className="flex-1">
-              <FormLabel className="text-sm text-muted-foreground">Nom du champ</FormLabel>
-              <Input
-                placeholder="Ex: Compétence particulière"
-                value={newFieldLabel}
-                onChange={(e) => setNewFieldLabel(e.target.value)}
-              />
-            </div>
-            <div className="flex-1">
-              <FormLabel className="text-sm text-muted-foreground">Valeur</FormLabel>
-              <Input
-                placeholder="Ex: Excel avancé"
-                value={newFieldValue}
-                onChange={(e) => setNewFieldValue(e.target.value)}
-              />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addCustomField}
-              disabled={!newFieldLabel.trim() || !newFieldValue.trim()}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Ajouter
-            </Button>
-          </div>
-          
-          <p className="text-sm text-muted-foreground">
-            Ajoutez des informations supplémentaires non prévues dans le formulaire standard.
-          </p>
-        </div>
-
+        {/* Actions */}
         <div className="flex justify-end gap-3 pt-6 border-t border-border">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>

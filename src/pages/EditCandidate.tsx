@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Header } from '@/components/layout/Header';
 import { CandidateForm } from '@/components/candidates/CandidateForm';
 import { Candidate, CandidateFormData } from '@/types/candidate';
 import { getCandidateById, updateCandidate } from '@/lib/database';
@@ -57,10 +56,6 @@ export default function EditCandidate() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header 
-        title="Modifier le candidat" 
-        subtitle={`${candidate.prenom} ${candidate.nom}`}
-      />
       
       <div className="p-8">
         <div className="max-w-5xl mx-auto bg-card rounded-xl border shadow-card p-8">
